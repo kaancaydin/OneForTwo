@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="shortcut icon" href="square.svg" type="image/x-icon">
+<title>One For Two</title>
+<style>
+  html,body {
+    margin:0; height:100%; display:flex; justify-content:center; align-items:center; flex-direction:column;
+    background:#000;
+  }
+  canvas {
+    background:#111;
+    border-radius:4px;
+  }
+  #counter{
+	color: #FFFF;
+	font-size: 24px;
+	font-weight: bold;
+	font-family: Arial;
+	border: 2px solid #FFFF;
+  	border-radius:20px;
+	padding: 1rem;	
+}
+</style>
+</head>
+<body>
+<p id="counter"> Ball Count : 1</p>
+<canvas id="game" width="500" height="500"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const counter = document.getElementById("counter");
+
+// kare alan
+const box = {x:0, y:0, w:canvas.width, h:canvas.height};
+
+// delik (boşluk)
+const hole = {w:80, x:0, dir:1, speed:2};
+
+// fizik
+const gravity = 0.25;
+const bounce = -0.9;
+
+// toplar
+let balls = [
+  {x:box.w/2, y:100, vy:0, r:10, color:"white"}
+];
+
+function update() {
+  // delik hareketi
+  hole.x += hole.dir * hole.speed;
+  if (hole.x + hole.w > box.w || hole.x < 0) hole.dir *= -1;
+
+  for (let i=0; i<balls.length; i++) {
+    const b = balls[i];
+    b.vy += gravity;
+    b.y += b.vy;
+
+    // zemin kontrol
+    if (b.y + b.r > box.h) {
+      if (b.x < hole.x || b.x > hole.x + hole.w) {
+        b.y = box.h - b.r;
+        b.vy *= bounce;
+      } else {
+        spawnTwo();
+        balls.splice(i,1);
+        i--;
+        continue;
+      }
+    }
+
+    if (b.y - b.r < 0) {
+      b.y = b.r;
+      b.vy *= -0.8;
+    }
+  }
+
+updateCount();
+}
+
+function spawnTwo() {
+  for (let i=0;i<2;i++) {
+    balls.push({
+      x: Math.random()*(box.w-40)+20,
+      y: 100,
+      vy: -5 - Math.random()*2,
+      r: 10,
+      color: `hsl(${Math.random()*360},100%,70%)`
+    });
+  }
+}
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle="white";
+  ctx.lineWidth=3;
+
+  // kareyi çiz (alt kenarda delik var)
+  ctx.beginPath();
+  // sol, üst, sağ kenar
+  ctx.strokeRect(box.x, box.y, box.w, box.h);
+  // alt kenar - delik kısmını atla
+  ctx.beginPath();
+  ctx.moveTo(box.x, box.y + box.h);
+  ctx.lineTo(hole.x, box.y + box.h);
+  ctx.moveTo(hole.x + hole.w, box.y + box.h);
+  ctx.lineTo(box.x + box.w, box.y + box.h);
+  ctx.stroke();
+ctx.fillStyle = "#000";
+ctx.fillRect(hole.x, box.y + box.h - 3, hole.w, 6);
+
+  // toplar
+  for (const b of balls) {
+    // gölge efekti
+    ctx.beginPath();
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+
+    // gölgeyi sıfırla, aksi halde tüm çizimler gölgeli olur
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  }
+}
+
+function updateCount(){
+	counter.textContent = `Ball Count : ${balls.length}`;
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
